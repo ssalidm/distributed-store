@@ -1,4 +1,4 @@
-# Distributed Store - Order Service
+# Distributed Store
 
 A Spring Boot REST API for managing customer orders.
 
