@@ -3,13 +3,18 @@ package za.co.pixelly.order.service.dto;
 import za.co.pixelly.order.service.entity.Order;
 import za.co.pixelly.order.service.entity.OrderStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record OrderResponse(
-        String id,
+        UUID id,
         String customerName,
+        UUID productId,
         String productName,
+        BigDecimal unitPrice,
         int quantity,
+        BigDecimal totalAmount,
         OrderStatus status,
         Instant createdAt,
         Instant updatedAt
@@ -19,8 +24,11 @@ public record OrderResponse(
         return new OrderResponse(
                 order.getId(),
                 order.getCustomerName(),
+                order.getProductId(),
                 order.getProductName(),
+                order.getUnitPrice(),
                 order.getQuantity(),
+                order.getTotalAmount(),
                 order.getStatus(),
                 order.getCreatedAt(),
                 order.getUpdatedAt()
