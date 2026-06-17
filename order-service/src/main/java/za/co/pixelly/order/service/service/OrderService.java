@@ -5,15 +5,16 @@ import za.co.pixelly.order.service.dto.OrderResponse;
 import za.co.pixelly.order.service.dto.OrderStatusRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface OrderService {
     OrderResponse createOrder(OrderRequest request);
 
     List<OrderResponse> getOrders();
 
-    OrderResponse getOrder(String orderId);
+    OrderResponse getOrder(UUID orderId);
 
-    OrderResponse updateOrderStatus(String orderId, OrderStatusRequest request);
+    OrderResponse updateOrderStatus(UUID orderId, OrderStatusRequest request);
 
-    void deleteOrder(String orderId);
+    void deleteOrder(UUID orderId);
 }

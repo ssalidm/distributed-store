@@ -12,6 +12,7 @@ import za.co.pixelly.order.service.dto.OrderStatusRequest;
 import za.co.pixelly.order.service.service.OrderService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -39,7 +40,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(@PathVariable String orderId) {
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(@PathVariable UUID orderId) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(
                         orderService.getOrder(orderId),
@@ -50,7 +51,7 @@ public class OrderController {
 
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> updateOrderStatus(
-            @PathVariable String orderId,
+            @PathVariable UUID orderId,
             @Valid @RequestBody OrderStatusRequest request) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(
@@ -61,7 +62,7 @@ public class OrderController {
 
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponse<String>> deleteOrder(
-            @PathVariable String orderId) {
+            @PathVariable UUID orderId) {
         orderService.deleteOrder(orderId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success("Order deleted"));
