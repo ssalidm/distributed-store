@@ -9,6 +9,7 @@ import java.util.UUID;
 public record ProductResponse(
         UUID id,
         String name,
+        String sku,
         BigDecimal price,
         Integer stockQuantity,
         Instant createdAt,
@@ -18,6 +19,7 @@ public record ProductResponse(
         return new ProductResponse(
                 product.getId(),
                 product.getName(),
+                product.getSku(),
                 product.getPrice(),
                 product.getStockQuantity(),
                 product.getCreatedAt(),

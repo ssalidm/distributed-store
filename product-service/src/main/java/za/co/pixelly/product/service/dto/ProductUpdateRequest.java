@@ -7,9 +7,12 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public record ProductRequest(
+public record ProductUpdateRequest(
         @NotBlank(message = "Product name is required")
         String name,
+
+        @NotBlank(message = "Product sku is required")
+        String sku,
 
         @NotNull(message = "Price is required")
         @DecimalMin("0.01")

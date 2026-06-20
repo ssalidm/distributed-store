@@ -31,6 +31,9 @@ public class Order {
     @Column(nullable = false, name = "product_name")
     private String productName;
 
+    @Column(nullable = false, name = "sku")
+    private String sku;
+
     @Column(nullable = false, precision = 10, scale = 2, name = "unit_price")
     private BigDecimal unitPrice;
 

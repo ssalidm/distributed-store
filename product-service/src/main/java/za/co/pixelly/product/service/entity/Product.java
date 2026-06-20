@@ -26,6 +26,9 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
+    private String sku;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 

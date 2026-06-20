@@ -1,5 +1,6 @@
 package za.co.pixelly.order.service.exception;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,5 +94,20 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.validationError(
                         errors,
                         request.getRequestURI()));
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCircuitBreakerOpen(
+            CallNotPermittedException ex,
+            HttpServletRequest request) {
+
+        LOGGER.warn(":::: Circuit breaker is open on {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error(
+                        "Product Service is temporarily unavailable. Please try again shortly.",
+                        HttpStatus.SERVICE_UNAVAILABLE.value(),
+                        request.getRequestURI()
+                ));
     }
 }
