@@ -12,5 +12,18 @@ spring:
       ddl-auto: update
     show-sql: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId}]"
+
 server:
   port: ${PORT:8081}

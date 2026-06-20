@@ -20,12 +20,25 @@ public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+
+        LOGGER.warn(":::: Business rule violation on {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        ex.getMessage(), HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI()));
+    }
+
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleProductNotFound(
             ProductNotFoundException ex,
             HttpServletRequest request) {
 
-        LOGGER.warn(":::: Business rule violation on {}: {}", request.getRequestURI(), ex.getMessage());
+        LOGGER.warn(":::: Product request failed on {}: {}", request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(

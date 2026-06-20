@@ -36,6 +36,7 @@ public class DefaultOrderService implements OrderService {
                 .customerName(request.customerName())
                 .productId(request.productId())
                 .productName(product.name())
+                .sku(product.sku())
                 .unitPrice(product.price())
                 .quantity(request.quantity())
                 .totalAmount(product.price().multiply(BigDecimal.valueOf(request.quantity())))
