@@ -10,6 +10,7 @@ import za.co.pixelly.order.service.dto.OrderStatusRequest;
 import za.co.pixelly.order.service.entity.Order;
 import za.co.pixelly.order.service.exception.InsufficientStockException;
 import za.co.pixelly.order.service.exception.OrderNotFoundException;
+import za.co.pixelly.order.service.messaging.OrderEventPublisher;
 import za.co.pixelly.order.service.repository.OrderRepository;
 
 
@@ -23,6 +24,7 @@ public class DefaultOrderService implements OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
+    private final OrderEventPublisher orderEventPublisher;
 
     @Override
     public OrderResponse createOrder(OrderRequest request) {
@@ -32,17 +34,10 @@ public class DefaultOrderService implements OrderService {
             throw new InsufficientStockException("Not enough stock available");
         }
 
-        Order newOrder = Order.builder()
-                .customerName(request.customerName())
-                .productId(request.productId())
-                .productName(product.name())
-                .sku(product.sku())
-                .unitPrice(product.price())
-                .quantity(request.quantity())
-                .totalAmount(product.price().multiply(BigDecimal.valueOf(request.quantity())))
-                .build();
-
-        return OrderResponse.from(orderRepository.saveAndFlush(newOrder));
+        Order newOrder = buildOrder(request, product);
+        Order savedOrder = orderRepository.saveAndFlush(newOrder);
+        orderEventPublisher.publishOrderCreated(savedOrder);
+        return OrderResponse.from(savedOrder);
     }
 
     @Override
@@ -75,5 +70,17 @@ public class DefaultOrderService implements OrderService {
     private Order findOrder(UUID orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+    }
+
+    private Order buildOrder(OrderRequest request, ProductResponse product) {
+        return Order.builder()
+                .customerName(request.customerName())
+                .productId(request.productId())
+                .productName(product.name())
+                .sku(product.sku())
+                .unitPrice(product.price())
+                .quantity(request.quantity())
+                .totalAmount(product.price().multiply(BigDecimal.valueOf(request.quantity())))
+                .build();
     }
 }

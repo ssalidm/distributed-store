@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: notification-service
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false
+
+messaging:
+  order:
+    exchange: order.exchange
+    queue: notification.order-created.queue
+    routing-key: order.created
+
+  notification:
+    dead-letter-exchange: notification.dlx
+    dead-letter-queue: notification.order-created.dlq
+    dead-letter-routing-key: notification.order-created.failed
+
+    retry-queue: notification.order-created.retry.queue
+    retry-routing-key: notification.order-created.retry
+    retry-delay-ms: 10000
+    max-retry-attempts: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId}]"
+
+server:
+  port: ${PORT:8082}

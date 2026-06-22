@@ -12,6 +12,17 @@ spring:
       ddl-auto: update
     show-sql: false
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+messaging:
+  order:
+    exchange: order.exchange
+    routing-key: order.created
+
 services:
   product-service:
     base-url: ${PRODUCT_SERVICE_BASE_URL:http://localhost:8081}
