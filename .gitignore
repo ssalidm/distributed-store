@@ -32,4 +32,12 @@ build/
 ### VS Code ###
 .vscode/
 
+# Environment files
 .env
+.env.*
+application-local.yaml
+application-dev.yaml
+
+# Docker/local
+postgres-data/
+rabbitmq-data/
