@@ -2,6 +2,7 @@ package za.co.pixelly.order.service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.co.pixelly.order.service.client.ProductClient;
 import za.co.pixelly.order.service.client.dto.ProductResponse;
 import za.co.pixelly.order.service.dto.OrderRequest;
@@ -11,6 +12,7 @@ import za.co.pixelly.order.service.entity.Order;
 import za.co.pixelly.order.service.exception.InsufficientStockException;
 import za.co.pixelly.order.service.exception.OrderNotFoundException;
 import za.co.pixelly.order.service.messaging.OrderEventPublisher;
+import za.co.pixelly.order.service.outbox.OutboxEventService;
 import za.co.pixelly.order.service.repository.OrderRepository;
 
 
@@ -25,7 +27,9 @@ public class DefaultOrderService implements OrderService {
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
     private final OrderEventPublisher orderEventPublisher;
+    private final OutboxEventService outboxEventService;
 
+    @Transactional
     @Override
     public OrderResponse createOrder(OrderRequest request) {
         ProductResponse product = productClient.getProduct(request.productId());
@@ -36,7 +40,11 @@ public class DefaultOrderService implements OrderService {
 
         Order newOrder = buildOrder(request, product);
         Order savedOrder = orderRepository.saveAndFlush(newOrder);
-        orderEventPublisher.publishOrderCreated(savedOrder);
+
+        outboxEventService.saveOrderCreatedEvent(savedOrder);
+
+//        orderEventPublisher.publishOrderCreated(savedOrder);
+
         return OrderResponse.from(savedOrder);
     }
 
@@ -53,6 +61,7 @@ public class DefaultOrderService implements OrderService {
         return OrderResponse.from(findOrder(orderId));
     }
 
+    @Transactional
     @Override
     public OrderResponse updateOrderStatus(UUID orderId, OrderStatusRequest request) {
         Order order = findOrder(orderId);
@@ -61,6 +70,7 @@ public class DefaultOrderService implements OrderService {
         return OrderResponse.from(orderRepository.saveAndFlush(order));
     }
 
+    @Transactional
     @Override
     public void deleteOrder(UUID orderId) {
         Order order = findOrder(orderId);

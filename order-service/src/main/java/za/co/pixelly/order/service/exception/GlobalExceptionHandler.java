@@ -21,6 +21,19 @@ public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+            Exception ex,
+            HttpServletRequest request) {
+
+        LOGGER.warn(":::: Business rule violation on {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(
+                        ex.getMessage(), HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI()));
+    }
+
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleOrderNotFoundException(
             OrderNotFoundException ex,

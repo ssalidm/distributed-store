@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record OrderCreatedEvent(
+        UUID eventId,
         UUID orderId,
         String customerName,
         UUID productId,
@@ -23,6 +24,7 @@ public record OrderCreatedEvent(
 ) {
     public static OrderCreatedEvent from(Order order) {
         return new OrderCreatedEvent(
+                UUID.randomUUID(),
                 order.getId(),
                 order.getCustomerName(),
                 order.getProductId(),

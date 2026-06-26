@@ -10,6 +10,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import za.co.pixelly.notification.service.messaging.event.OrderCreatedEvent;
+import za.co.pixelly.notification.service.service.NotificationProcessor;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class OrderCreatedListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OrderCreatedListener.class);
     private final RabbitTemplate rabbitTemplate;
+    private final NotificationProcessor notificationProcessor;
 
     @Value("${messaging.notification.dead-letter-exchange}")
     private String deadLetterExchange;
@@ -35,17 +37,20 @@ public class OrderCreatedListener {
         putCorrelationId(event);
 
         try {
-            LOGGER.info(":::: Received OrderCreated event for orderId={} ::::", event.orderId());
+            LOGGER.info(":::: Received OrderCreated event for eventId={}, orderId={} ::::",
+                    event.eventId(),
+                    event.orderId());
 
-            simulateProcessNotificationFailure();
+//            simulateProcessNotificationFailure();
 
-            processNotification(event);
+            notificationProcessor.processOrderCreated(event);
 
         } catch (Exception e) {
             int retryCount = getRetryCount(message);
 
             LOGGER.warn(
-                    "Failed to process notifications for orderId={}. retryCount={}, maxRetryAttempts={}, error={}",
+                    ":::: Failed to process notifications for eventId={}, orderId={}. retryCount={}, maxRetryAttempts={}, error={} ::::",
+                    event.eventId(),
                     event.orderId(),
                     retryCount,
                     maxRetryAttempts,
@@ -54,7 +59,8 @@ public class OrderCreatedListener {
 
             if (retryCount >= maxRetryAttempts - 1) {
                 LOGGER.error(
-                        "Max retry attempts reached for orderId={}. Sending message to DLQ.",
+                        ":::: Max retry attempts reached. Sending message to DLQ. eventId={}, orderId={} ::::",
+                        event.eventId(),
                         event.orderId()
                 );
 
@@ -89,18 +95,6 @@ public class OrderCreatedListener {
          * Later remove this throw.
          */
         throw new RuntimeException("Simulated notification failure");
-    }
-
-    private void processNotification(OrderCreatedEvent event) {
-        LOGGER.info(
-                "🛒 Notification sent for orderId={}, customerName={}, productName={}, unitPrice={}, quantity={}, totalAmount={}",
-                event.orderId(),
-                event.customerName(),
-                event.productName(),
-                event.unitPrice(),
-                event.quantity(),
-                event.totalAmount()
-        );
     }
 
     private int getRetryCount(Message message) {
