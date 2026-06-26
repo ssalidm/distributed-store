@@ -1,10 +1,10 @@
-package za.co.pixelly.order.service;
+package za.co.pixelly.notification.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class OrderServiceApplicationTests {
+class NotificationServiceApplicationTests {
 
     @Test
     void contextLoads() {
