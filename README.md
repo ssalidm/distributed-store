@@ -40,6 +40,7 @@ flowchart TD
 
     OrderService -->|HTTP REST| ProductService[Product Service]
     ProductService --> ProductDB[(Product PostgreSQL DB)]
+    ProductDB --> ProductsTable[(products)]
 
     OrderService --> OrderDB[(Order PostgreSQL DB)]
     OrderDB --> OrdersTable[(orders)]
