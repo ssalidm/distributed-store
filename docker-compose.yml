@@ -36,8 +36,8 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin}
 
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics check_running"]

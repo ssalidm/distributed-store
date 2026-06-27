@@ -7,10 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import za.co.pixelly.product.service.dto.ApiResponse;
-import za.co.pixelly.product.service.dto.ProductCreateRequest;
-import za.co.pixelly.product.service.dto.ProductResponse;
-import za.co.pixelly.product.service.dto.ProductUpdateRequest;
+import za.co.pixelly.product.service.dto.*;
 import za.co.pixelly.product.service.service.ProductService;
 
 import java.util.List;
@@ -94,5 +91,33 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success("Product deleted")
                 );
+    }
+
+    @PatchMapping("/{productId}/stock/reserve")
+    public ResponseEntity<ApiResponse<ProductResponse>> reserveStock(
+            @PathVariable UUID productId,
+            @Valid @RequestBody StockAdjustmentRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        productService.reserveStock(productId, request.quantity()),
+                        "Stock reserved",
+                        200
+                )
+        );
+    }
+
+    @PatchMapping("/{productId}/stock/release")
+    public ResponseEntity<ApiResponse<ProductResponse>> releaseStock(
+            @PathVariable UUID productId,
+            @Valid @RequestBody StockAdjustmentRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        productService.releaseStock(productId, request.quantity()),
+                        "Stock release",
+                        200
+                )
+        );
     }
 }
