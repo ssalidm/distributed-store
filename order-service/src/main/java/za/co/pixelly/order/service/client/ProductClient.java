@@ -14,6 +14,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import za.co.pixelly.order.service.client.dto.ProductResponse;
 import za.co.pixelly.order.service.client.dto.ProductServiceApiResponse;
+import za.co.pixelly.order.service.client.dto.StockAdjustmentRequest;
+import za.co.pixelly.order.service.exception.InsufficientStockException;
 import za.co.pixelly.order.service.exception.ProductNotFoundException;
 import za.co.pixelly.order.service.exception.ProductServiceException;
 
@@ -59,6 +61,55 @@ public class ProductClient {
             throw new ProductServiceException(
                     "Product Service is currently unreachable or timed out"
             );
+        }
+    }
+
+    public ProductResponse reserveStock(UUID productId, Integer quantity) {
+        try {
+            LOGGER.info(":::: Reserving stock for productId={}, quantity={}", productId, quantity);
+
+            ProductServiceApiResponse<ProductResponse> response = productRestClient
+                    .patch()
+                    .uri("/api/products/{productId}/stock/reserve", productId)
+                    .body(new StockAdjustmentRequest(quantity))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {
+                    });
+
+            if (response == null || response.result() == null) {
+                throw new ProductServiceException("Product Service returned an empty reserve stock response");
+            }
+
+            return response.result();
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
+                throw new ProductNotFoundException("Product not found");
+            }
+
+            if (ex.getStatusCode() == HttpStatus.CONFLICT) {
+                throw new InsufficientStockException("Insufficient stock available");
+            }
+
+            throw new ProductServiceException(("Product Service returned an unexpected error while reserving stock"));
+        } catch (ResourceAccessException ex) {
+            throw new ProductServiceException("Product service is currently unreachable");
+        }
+    }
+
+    public void releaseStock(UUID productId, Integer quantity) {
+        try {
+            LOGGER.info("Releasing stock for productId={}, quantity={}", productId, quantity);
+
+            productRestClient
+                    .patch()
+                    .uri("/api/products/{productId}/stock/release", productId)
+                    .body(new StockAdjustmentRequest(quantity))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+            throw new ProductServiceException("Product Service returned an unexpected error while releasing stock");
+        } catch (ResourceAccessException ex) {
+            throw new ProductServiceException("Product Service is currently unreachable while releasing stock");
         }
     }
 }

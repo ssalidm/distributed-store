@@ -17,7 +17,7 @@ spring:
 #    port: ${RABBITMQ_PORT:5672}
 #    username: ${RABBITMQ_USERNAME:guest}
 #    password: ${RABBITMQ_PASSWORD:guest}
-    addresses: ${RABBITMQ_CONNECTION_URL:amqp://guest:guest@localhost:5672}
+    addresses: ${RABBITMQ_CONNECTION_URL:amqp://admin:admin@localhost:5672}
 
 messaging:
   order:
