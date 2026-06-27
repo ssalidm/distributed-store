@@ -1,6 +1,8 @@
 package za.co.pixelly.order.service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.co.pixelly.order.service.client.ProductClient;
@@ -9,14 +11,10 @@ import za.co.pixelly.order.service.dto.OrderRequest;
 import za.co.pixelly.order.service.dto.OrderResponse;
 import za.co.pixelly.order.service.dto.OrderStatusRequest;
 import za.co.pixelly.order.service.entity.Order;
-import za.co.pixelly.order.service.exception.InsufficientStockException;
 import za.co.pixelly.order.service.exception.OrderNotFoundException;
-import za.co.pixelly.order.service.messaging.OrderEventPublisher;
-import za.co.pixelly.order.service.outbox.OutboxEventService;
 import za.co.pixelly.order.service.repository.OrderRepository;
 
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,28 +22,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DefaultOrderService implements OrderService {
 
-    private final OrderRepository orderRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOrderService.class);
     private final ProductClient productClient;
-    private final OrderEventPublisher orderEventPublisher;
-    private final OutboxEventService outboxEventService;
+    private final OrderCreationTransactionService orderCreationTransactionService;
 
-    @Transactional
+    private final OrderRepository orderRepository;
+
     @Override
     public OrderResponse createOrder(OrderRequest request) {
-        ProductResponse product = productClient.getProduct(request.productId());
+        ProductResponse reservedProduct = productClient.reserveStock(request.productId(), request.quantity());
 
-        if (product.stockQuantity() < request.quantity()) {
-            throw new InsufficientStockException("Not enough stock available");
+        try {
+            return orderCreationTransactionService.saveOrderAndOutbox(request, reservedProduct);
+        } catch (Exception ex) {
+            compensateStockReservation(request, ex);
+            throw ex;
         }
-
-        Order newOrder = buildOrder(request, product);
-        Order savedOrder = orderRepository.saveAndFlush(newOrder);
-
-        outboxEventService.saveOrderCreatedEvent(savedOrder);
-
-//        orderEventPublisher.publishOrderCreated(savedOrder);
-
-        return OrderResponse.from(savedOrder);
     }
 
     @Override
@@ -82,15 +74,33 @@ public class DefaultOrderService implements OrderService {
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
     }
 
-    private Order buildOrder(OrderRequest request, ProductResponse product) {
-        return Order.builder()
-                .customerName(request.customerName())
-                .productId(request.productId())
-                .productName(product.name())
-                .sku(product.sku())
-                .unitPrice(product.price())
-                .quantity(request.quantity())
-                .totalAmount(product.price().multiply(BigDecimal.valueOf(request.quantity())))
-                .build();
+    private void compensateStockReservation(OrderRequest request, Exception originalException) {
+        try {
+            LOGGER.warn(
+                    "Order creation failed after stock reservation. Releasing stock. productId={}, quantity={}, error={}",
+                    request.productId(),
+                    request.quantity(),
+                    originalException.getMessage()
+            );
+
+            productClient.releaseStock(
+                    request.productId(),
+                    request.quantity()
+            );
+
+            LOGGER.info(
+                    "Stock compensation completed. productId={}, quantity={}",
+                    request.productId(),
+                    request.quantity()
+            );
+        } catch (Exception compensationException) {
+            LOGGER.error(
+                    "Stock compensation failed. Manual investigation required. productId={}, quantity={}, originalError={}, compensationError={}",
+                    request.productId(),
+                    request.quantity(),
+                    originalException.getMessage(),
+                    compensationException.getMessage()
+            );
+        }
     }
 }

@@ -7,6 +7,7 @@ import za.co.pixelly.product.service.dto.ProductCreateRequest;
 import za.co.pixelly.product.service.dto.ProductResponse;
 import za.co.pixelly.product.service.dto.ProductUpdateRequest;
 import za.co.pixelly.product.service.entity.Product;
+import za.co.pixelly.product.service.exception.InsufficientStockException;
 import za.co.pixelly.product.service.exception.ProductNotFoundException;
 import za.co.pixelly.product.service.repository.ProductRepository;
 
@@ -21,8 +22,8 @@ public class DefaultProductService implements ProductService {
 
     private final ProductRepository productRepository;
 
-    @Override
     @Transactional
+    @Override
     public ProductResponse createProduct(ProductCreateRequest request) {
         if (productRepository.existsBySku(request.sku())) {
             throw new IllegalArgumentException("Product with SKU '" + request.sku() + "' already exists.");
@@ -38,12 +39,6 @@ public class DefaultProductService implements ProductService {
 
     @Override
     public ProductResponse getProductById(UUID productId) {
-//        try {
-//            Thread.sleep(5000);
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//        }
-
         return ProductResponse.from(findProduct(productId));
     }
 
@@ -55,8 +50,8 @@ public class DefaultProductService implements ProductService {
         return ProductResponse.from(product);
     }
 
-    @Override
     @Transactional
+    @Override
     public ProductResponse updateProduct(UUID productId, ProductUpdateRequest request) {
         Product product = findProduct(productId);
 
@@ -74,8 +69,8 @@ public class DefaultProductService implements ProductService {
         return ProductResponse.from(updatedProduct);
     }
 
-    @Override
     @Transactional
+    @Override
     public void deleteProduct(UUID productId) {
         productRepository.delete(findProduct(productId));
     }
@@ -83,6 +78,34 @@ public class DefaultProductService implements ProductService {
     private Product findProduct(UUID productId) {
         return productRepository.findById(productId).orElseThrow(
                 ProductNotFoundException::new);
+    }
+
+    @Transactional
+    @Override
+    public ProductResponse reserveStock(UUID productId, Integer quantity) {
+        Product product = productRepository.findByIdForUpdate(productId)
+                .orElseThrow(ProductNotFoundException::new);
+
+        if (product.getStockQuantity() < quantity) {
+            throw new InsufficientStockException(
+                    "Insufficient stock. Available stock: " + product.getStockQuantity()
+            );
+        }
+
+        product.setStockQuantity(product.getStockQuantity() - quantity);
+        Product savedProduct = productRepository.save(product);
+        return ProductResponse.from(savedProduct);
+    }
+
+    @Transactional
+    @Override
+    public ProductResponse releaseStock(UUID productId, Integer quantity) {
+        Product product = productRepository.findByIdForUpdate(productId)
+                .orElseThrow(ProductNotFoundException::new);
+
+        product.setStockQuantity(product.getStockQuantity() + quantity);
+        Product savedProduct = productRepository.save(product);
+        return ProductResponse.from(savedProduct);
     }
 
     private static Product toEntity(ProductCreateRequest request) {

@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(
-                        ex.getMessage(), HttpStatus.BAD_REQUEST.value(),
+                        ex.getMessage(), 400,
                         request.getRequestURI()));
     }
 
@@ -42,7 +42,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(
-                        ex.getMessage(), HttpStatus.NOT_FOUND.value(),
+                        ex.getMessage(), 404,
+                        request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsufficientStock(
+            InsufficientStockException ex,
+            HttpServletRequest request) {
+
+        LOGGER.warn(":::: Stock conflict on {}: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        ex.getMessage(), 409,
                         request.getRequestURI()));
     }
 
