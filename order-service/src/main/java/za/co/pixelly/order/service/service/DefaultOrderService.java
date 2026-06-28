@@ -42,7 +42,8 @@ public class DefaultOrderService implements OrderService {
         try {
             return orderCreationTransactionService.saveOrderAndOutbox(
                     request,
-                    reservedProduct
+                    reservedProduct,
+                    reservationId
             );
 
         } catch (Exception ex) {

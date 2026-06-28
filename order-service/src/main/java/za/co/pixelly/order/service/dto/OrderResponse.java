@@ -17,6 +17,7 @@ public record OrderResponse(
         int quantity,
         BigDecimal totalAmount,
         OrderStatus status,
+        UUID stockReservationId,
         Instant createdAt,
         Instant updatedAt
 
@@ -32,6 +33,7 @@ public record OrderResponse(
                 order.getQuantity(),
                 order.getTotalAmount(),
                 order.getStatus(),
+                order.getStockReservationId(),
                 order.getCreatedAt(),
                 order.getUpdatedAt()
         );
