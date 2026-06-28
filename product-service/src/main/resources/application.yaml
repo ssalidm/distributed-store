@@ -21,6 +21,9 @@ management:
     health:
       show-details: always
 
+security:
+  internal-api-key: ${INTERNAL_API_KEY:dev-internal-key}
+
 logging:
   pattern:
     level: "%5p [correlationId=%X{correlationId}]"

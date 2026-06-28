@@ -85,8 +85,9 @@ public class ProductController {
     @DeleteMapping("/id/{productId}")
     public ResponseEntity<ApiResponse<String>> deleteProduct(
             @PathVariable UUID productId) {
-        productService.deleteProduct(productId);
         LOGGER.info("Received request to delete product with id={}", productId);
+
+        productService.deleteProduct(productId);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success("Product deleted")
@@ -98,6 +99,8 @@ public class ProductController {
             @PathVariable UUID productId,
             @Valid @RequestBody StockAdjustmentRequest request
     ) {
+        LOGGER.info("Received request to reserve stock for product with id={}", productId);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         productService.reserveStock(productId,request.reservationId(), request.quantity()),
@@ -112,6 +115,8 @@ public class ProductController {
             @PathVariable UUID productId,
             @Valid @RequestBody StockAdjustmentRequest request
     ) {
+        LOGGER.info("Received request to release stock for product with id={}", productId);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         productService.releaseStock(productId, request.reservationId()),
