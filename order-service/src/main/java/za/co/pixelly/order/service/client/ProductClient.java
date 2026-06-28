@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,9 @@ public class ProductClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProductClient.class);
     private final RestClient productRestClient;
+
+    @Value("${services.product-service.internal-api-key}")
+    private String productServiceInternalApiKey;
 
     @CircuitBreaker(name = "productService")
     @Retry(name = "productService")
@@ -75,6 +79,7 @@ public class ProductClient {
             ProductServiceApiResponse<ProductResponse> response = productRestClient
                     .patch()
                     .uri("/api/products/{productId}/stock/reserve", productId)
+                    .header("X-INTERNAL-API-KEY", productServiceInternalApiKey)
                     .body(new StockAdjustmentRequest(reservationId, quantity))
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {
@@ -85,6 +90,7 @@ public class ProductClient {
             }
 
             return response.result();
+
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new ProductNotFoundException("Product not found");
@@ -94,7 +100,9 @@ public class ProductClient {
                 throw new InsufficientStockException("Insufficient stock available");
             }
 
+            LOGGER.error(ex.getMessage());
             throw new ProductServiceException(("Product Service returned an unexpected error while reserving stock"));
+
         } catch (ResourceAccessException ex) {
             throw new ProductServiceException("Product service is currently unreachable while reserving stock");
         }
@@ -110,6 +118,7 @@ public class ProductClient {
             productRestClient
                     .patch()
                     .uri("/api/products/{productId}/stock/release", productId)
+                    .header("X-INTERNAL-API-KEY", productServiceInternalApiKey)
                     .body(new StockAdjustmentRequest(reservationId, quantity))
                     .retrieve()
                     .toBodilessEntity();
