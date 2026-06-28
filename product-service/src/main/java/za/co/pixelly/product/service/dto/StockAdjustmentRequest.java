@@ -3,7 +3,12 @@ package za.co.pixelly.product.service.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.UUID;
+
 public record StockAdjustmentRequest(
+        @NotNull(message = "Reservation ID is required")
+        UUID reservationId,
+
         @NotNull(message = "Quantity is required")
         @Min(value = 1, message = "Quantity must be at least 1")
         Integer quantity

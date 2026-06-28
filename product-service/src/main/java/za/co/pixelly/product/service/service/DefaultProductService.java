@@ -7,9 +7,13 @@ import za.co.pixelly.product.service.dto.ProductCreateRequest;
 import za.co.pixelly.product.service.dto.ProductResponse;
 import za.co.pixelly.product.service.dto.ProductUpdateRequest;
 import za.co.pixelly.product.service.entity.Product;
+import za.co.pixelly.product.service.entity.StockReservation;
+import za.co.pixelly.product.service.entity.StockReservationStatus;
 import za.co.pixelly.product.service.exception.InsufficientStockException;
 import za.co.pixelly.product.service.exception.ProductNotFoundException;
+import za.co.pixelly.product.service.exception.StockReservationException;
 import za.co.pixelly.product.service.repository.ProductRepository;
+import za.co.pixelly.product.service.repository.StockReservationRepository;
 
 
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class DefaultProductService implements ProductService {
 
     private final ProductRepository productRepository;
+    private final StockReservationRepository stockReservationRepository;
 
     @Transactional
     @Override
@@ -82,29 +87,84 @@ public class DefaultProductService implements ProductService {
 
     @Transactional
     @Override
-    public ProductResponse reserveStock(UUID productId, Integer quantity) {
+    public ProductResponse reserveStock(UUID productId, UUID reservationId, Integer quantity) {
+        return stockReservationRepository.findByReservationId(reservationId)
+                .map(existingReservation -> handleExistingReservation(
+                        productId, reservationId, quantity, existingReservation))
+                .orElseGet(() -> createNewReservation(productId, reservationId, quantity));
+    }
+
+    private ProductResponse handleExistingReservation(
+            UUID productId,
+            UUID reservationId,
+            Integer quantity,
+            StockReservation existingReservation
+    ) {
+        if (!existingReservation.getProductId().equals(productId)) {
+            throw new StockReservationException("Reservation ID already belongs to another product");
+        }
+
+        if (!existingReservation.getQuantity().equals(quantity)) {
+            throw new StockReservationException("Reservation ID already exists with a different quantity");
+        }
+
+        if (existingReservation.getStatus() == StockReservationStatus.RELEASED) {
+            throw new StockReservationException("Reservation was already released");
+        }
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(ProductNotFoundException::new);
+
+        return ProductResponse.from(product);
+    }
+
+    private ProductResponse createNewReservation(UUID productId, UUID reservationId, Integer quantity) {
         Product product = productRepository.findByIdForUpdate(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
         if (product.getStockQuantity() < quantity) {
-            throw new InsufficientStockException(
-                    "Insufficient stock. Available stock: " + product.getStockQuantity()
-            );
+            throw new InsufficientStockException("Insufficient stock. Available stock: " + product.getStockQuantity());
         }
 
         product.setStockQuantity(product.getStockQuantity() - quantity);
+
+        StockReservation reservation = StockReservation.builder()
+                .reservationId(reservationId)
+                .productId(productId)
+                .quantity(quantity)
+                .status(StockReservationStatus.RESERVED)
+                .build();
+
+        stockReservationRepository.save(reservation);
+
         Product savedProduct = productRepository.save(product);
+
         return ProductResponse.from(savedProduct);
     }
 
     @Transactional
     @Override
-    public ProductResponse releaseStock(UUID productId, Integer quantity) {
+    public ProductResponse releaseStock(UUID productId, UUID reservationId) {
+        StockReservation reservation = stockReservationRepository.findByReservationIdWithLock(reservationId)
+                .orElseThrow(() -> new StockReservationException("Stock reservation not found"));
+
+        if (!reservation.getProductId().equals(productId)) {
+            throw new StockReservationException("Reservation does not belong to this product");
+        }
+
         Product product = productRepository.findByIdForUpdate(productId)
                 .orElseThrow(ProductNotFoundException::new);
 
-        product.setStockQuantity(product.getStockQuantity() + quantity);
+        if (reservation.getStatus() == StockReservationStatus.RELEASED) {
+            return ProductResponse.from(product);
+        }
+
+        product.setStockQuantity(product.getStockQuantity() + reservation.getQuantity());
+        reservation.setStatus(StockReservationStatus.RELEASED);
+        stockReservationRepository.save(reservation);
+
         Product savedProduct = productRepository.save(product);
+
         return ProductResponse.from(savedProduct);
     }
 

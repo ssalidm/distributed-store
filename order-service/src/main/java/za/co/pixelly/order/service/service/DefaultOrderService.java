@@ -30,12 +30,23 @@ public class DefaultOrderService implements OrderService {
 
     @Override
     public OrderResponse createOrder(OrderRequest request) {
-        ProductResponse reservedProduct = productClient.reserveStock(request.productId(), request.quantity());
+
+        UUID reservationId = UUID.randomUUID();
+
+        ProductResponse reservedProduct = productClient.reserveStock(
+                request.productId(),
+                reservationId,
+                request.quantity()
+        );
 
         try {
-            return orderCreationTransactionService.saveOrderAndOutbox(request, reservedProduct);
+            return orderCreationTransactionService.saveOrderAndOutbox(
+                    request,
+                    reservedProduct
+            );
+
         } catch (Exception ex) {
-            compensateStockReservation(request, ex);
+            compensateStockReservation(request, reservationId, ex);
             throw ex;
         }
     }
@@ -74,17 +85,23 @@ public class DefaultOrderService implements OrderService {
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
     }
 
-    private void compensateStockReservation(OrderRequest request, Exception originalException) {
+    private void compensateStockReservation(
+            OrderRequest request,
+            UUID reservationId,
+            Exception originalException
+    ) {
         try {
             LOGGER.warn(
-                    "Order creation failed after stock reservation. Releasing stock. productId={}, quantity={}, error={}",
+                    "Order creation failed after stock reservation. Releasing stock. productId={}, reservationId={}, quantity={}, error={}",
                     request.productId(),
+                    reservationId,
                     request.quantity(),
                     originalException.getMessage()
             );
 
             productClient.releaseStock(
                     request.productId(),
+                    reservationId,
                     request.quantity()
             );
 
@@ -95,8 +112,9 @@ public class DefaultOrderService implements OrderService {
             );
         } catch (Exception compensationException) {
             LOGGER.error(
-                    "Stock compensation failed. Manual investigation required. productId={}, quantity={}, originalError={}, compensationError={}",
+                    "Stock compensation failed. Manual investigation required. productId={}, reservationId={}, quantity={}, originalError={}, compensationError={}",
                     request.productId(),
+                    reservationId,
                     request.quantity(),
                     originalException.getMessage(),
                     compensationException.getMessage()
