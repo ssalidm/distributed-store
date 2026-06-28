@@ -43,6 +43,9 @@ public class Order {
     @Column(nullable = false, precision = 10, scale = 2, name = "total_amount")
     private BigDecimal totalAmount;
 
+    @Column(name = "stock_reservation_id")
+    private UUID stockReservationId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

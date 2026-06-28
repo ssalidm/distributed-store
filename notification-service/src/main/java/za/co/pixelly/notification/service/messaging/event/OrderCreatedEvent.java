@@ -15,6 +15,7 @@ public record OrderCreatedEvent(
         Integer quantity,
         BigDecimal totalAmount,
         String status,
+        UUID stockReservationId,
         Instant createdAt,
         String correlationId
 ) {}

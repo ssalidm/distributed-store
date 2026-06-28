@@ -11,6 +11,7 @@ import za.co.pixelly.order.service.outbox.OutboxEventService;
 import za.co.pixelly.order.service.repository.OrderRepository;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,15 +21,19 @@ public class OrderCreationTransactionService {
     private final OutboxEventService outboxEventService;
 
     @Transactional
-    public OrderResponse saveOrderAndOutbox(OrderRequest request, ProductResponse product) {
-        Order order = buildOrder(request, product);
+    public OrderResponse saveOrderAndOutbox(
+            OrderRequest request,
+            ProductResponse product,
+            UUID reservationId
+    ) {
+        Order order = buildOrder(request, product, reservationId);
         Order savedOrder = orderRepository.saveAndFlush(order);
 
         outboxEventService.saveOrderCreatedEvent(savedOrder);
         return OrderResponse.from(savedOrder);
     }
 
-    private Order buildOrder(OrderRequest request, ProductResponse product) {
+    private Order buildOrder(OrderRequest request, ProductResponse product, UUID reservationId) {
         return Order.builder()
                 .customerName(request.customerName())
                 .productId(request.productId())
@@ -36,6 +41,7 @@ public class OrderCreationTransactionService {
                 .sku(product.sku())
                 .unitPrice(product.price())
                 .quantity(request.quantity())
+                .stockReservationId(reservationId)
                 .totalAmount(product.price().multiply(BigDecimal.valueOf(request.quantity())))
                 .build();
     }

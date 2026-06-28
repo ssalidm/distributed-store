@@ -59,6 +59,19 @@ public class GlobalExceptionHandler {
                         request.getRequestURI()));
     }
 
+    @ExceptionHandler(StockReservationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStockReservationException(
+            StockReservationException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(
+                        ex.getMessage(),
+                        409,
+                        request.getRequestURI()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,

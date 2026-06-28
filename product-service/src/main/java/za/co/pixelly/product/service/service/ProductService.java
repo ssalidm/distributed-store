@@ -20,7 +20,7 @@ public interface ProductService {
 
     void deleteProduct(UUID productId);
 
-    ProductResponse reserveStock(UUID productId, Integer quantity);
+    ProductResponse reserveStock(UUID productId, UUID reservationId, Integer quantity);
 
-    ProductResponse releaseStock(UUID productId, Integer quantity);
+    ProductResponse releaseStock(UUID productId, UUID reservationId);
 }

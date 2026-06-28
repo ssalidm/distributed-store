@@ -64,14 +64,18 @@ public class ProductClient {
         }
     }
 
-    public ProductResponse reserveStock(UUID productId, Integer quantity) {
+    public ProductResponse reserveStock(UUID productId, UUID reservationId, Integer quantity) {
         try {
-            LOGGER.info(":::: Reserving stock for productId={}, quantity={}", productId, quantity);
+            LOGGER.info(":::: Reserving stock for productId={}, reservationId={}, quantity={}",
+                    productId,
+                    reservationId,
+                    quantity
+            );
 
             ProductServiceApiResponse<ProductResponse> response = productRestClient
                     .patch()
                     .uri("/api/products/{productId}/stock/reserve", productId)
-                    .body(new StockAdjustmentRequest(quantity))
+                    .body(new StockAdjustmentRequest(reservationId, quantity))
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {
                     });
@@ -92,18 +96,21 @@ public class ProductClient {
 
             throw new ProductServiceException(("Product Service returned an unexpected error while reserving stock"));
         } catch (ResourceAccessException ex) {
-            throw new ProductServiceException("Product service is currently unreachable");
+            throw new ProductServiceException("Product service is currently unreachable while reserving stock");
         }
     }
 
-    public void releaseStock(UUID productId, Integer quantity) {
+    public void releaseStock(UUID productId, UUID reservationId, Integer quantity) {
         try {
-            LOGGER.info("Releasing stock for productId={}, quantity={}", productId, quantity);
+            LOGGER.info(":::: Releasing stock for productId={}, reservationId={}, quantity={}",
+                    productId,
+                    reservationId,
+                    quantity);
 
             productRestClient
                     .patch()
                     .uri("/api/products/{productId}/stock/release", productId)
-                    .body(new StockAdjustmentRequest(quantity))
+                    .body(new StockAdjustmentRequest(reservationId, quantity))
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException ex) {

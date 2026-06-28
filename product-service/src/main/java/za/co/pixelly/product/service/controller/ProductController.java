@@ -100,7 +100,7 @@ public class ProductController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        productService.reserveStock(productId, request.quantity()),
+                        productService.reserveStock(productId,request.reservationId(), request.quantity()),
                         "Stock reserved",
                         200
                 )
@@ -114,7 +114,7 @@ public class ProductController {
     ) {
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        productService.releaseStock(productId, request.quantity()),
+                        productService.releaseStock(productId, request.reservationId()),
                         "Stock release",
                         200
                 )

@@ -19,6 +19,7 @@ public record OrderCreatedEvent(
         Integer quantity,
         BigDecimal totalAmount,
         OrderStatus status,
+        UUID reservationId,
         Instant createdAt,
         String correlationId
 ) {
@@ -34,6 +35,7 @@ public record OrderCreatedEvent(
                 order.getQuantity(),
                 order.getTotalAmount(),
                 order.getStatus(),
+                order.getStockReservationId(),
                 order.getCreatedAt(),
                 MDC.get("correlationId")
         );
